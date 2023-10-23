@@ -14,3 +14,6 @@ class Heater():
     
     def switchOff(self): 
         self.switchedOn = False
+
+    def __bool__(self): 
+        return self.switchedOn

@@ -13,7 +13,9 @@ class Cuboid():
         self.h = h
 
     def getSurfaceArea(self) -> float: 
-        return 0 #change to get actual value 
+        #assumes roof is top side, not a regular factory roof. 
+        #assumes no heat loss to floor.
+        return 2*self.l*self.h + 2*self.w*self.h + self.l*self.w
 
     def getVolume(self) -> float: 
         return self.l * self.w * self.h

@@ -1,6 +1,6 @@
 import numpy as np
 
-class OutsideTemp(): 
+class OutsideEnvironment(): 
     def __init__(self, meanT: float, halfrangeT: float):
         self.meanT = meanT
         self.halfrangeT = halfrangeT 
@@ -11,3 +11,7 @@ class OutsideTemp():
     def outsideTemp(self) -> float: 
         global time_points
         return self.halfrangeT * np.sin((np.pi/12)*(time_points - 9))+self.meanT
+
+    
+    def getCurrentOutsideTemperature(self, currentTime: float) -> float: 
+        return 0
