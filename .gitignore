@@ -2,10 +2,11 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+reportComments.txt
 # C extensions
 *.so
-
+fac_env/
+.vscode/
 # Distribution / packaging
 .Python
 build/
