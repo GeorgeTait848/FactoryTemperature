@@ -14,4 +14,5 @@ class OutsideEnvironment():
 
     
     def getCurrentOutsideTemperature(self, currentTime: float) -> float: 
-        return 0
+        global currentTime
+        return self.halfrangeT * np.sin((np.pi/12)*(currentTime - 9))+self.meanT
