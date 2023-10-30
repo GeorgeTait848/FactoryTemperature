@@ -1,10 +1,12 @@
 import numpy as np
-import scipy.integrate as integrate
+# import scipy.integrate as integrate
 import math
 import matplotlib.pyplot as plt
 from heater import Heater
 from wallMaterials import ThermalConductivity, Cuboid
 from outsideTemp import OutsideEnvironment
+from trapezoidal import trapezoidal 
+
 
 AIR_SPECIFIC_HEAT_CAPACITY = 1.2 # kJ m^-3 K^-1
 
@@ -27,21 +29,19 @@ class Factory:
 
     def nonDimensionalisedTemperatureDerivative(self, currentTime: float) -> float: 
 
-        P_in = self.heater.heatOutputRate
+        P_in = self.heater.heatOutputRate if self.heater.switchedOn else 0
         heatCapacity = AIR_SPECIFIC_HEAT_CAPACITY*self.surface_walls.getVolume()
         surfaceArea = self.surface_walls.getSurfaceArea()
         outsideTemp = self.outdoors.getCurrentOutsideTemperature(currentTime)
         conductivity = self.conductivity.value
 
-        return P_in/heatCapacity - conductivity*surfaceArea/(self.wallThickness*heatCapacity)*(self.ind_temp - outsideTemp)
+        result = P_in/heatCapacity - conductivity*surfaceArea*(self.ind_temp - outsideTemp)/(self.wallThickness*heatCapacity)
+        return result
+
 
     def updateTemperature(self, currentTime: float, dt: float):
-
-        dimensionlessTempDerivative = np.array(self.nonDimensionalisedTemperatureDerivative(currentTime))
-        
-        newTemp = integrate.trapezoid(dimensionlessTempDerivative,currentTime, dx=dt)
-
-        self.ind_temp = newTemp[0]
+        dT = trapezoidal(f=self.nonDimensionalisedTemperatureDerivative, x=currentTime, dx=dt)
+        self.ind_temp += dT
 
     def simulateTemperature(self, timeSamples: list[float])-> list[float]: 
         temperatures = []
@@ -62,14 +62,21 @@ def main():
     print("Hello World \n")
     start = 0
     end = 24
-    step = 0.1
+    step = 0.001
     time_points = [start + i * step for i in range(int((end - start) / step) + 1)] #measure temp over 24hrs
-    outsideEnv = OutsideEnvironment(8,4)
-    factory = Factory(0.0, Cuboid(50,100,20), ThermalConductivity.STEEL, Heater(3e5), outsideEnv, 0.05)
+    outsideEnv = OutsideEnvironment(281,4)
+    
+    heatedFactory = Factory(283.0, Cuboid(50,100,20), ThermalConductivity.CONCRETE, Heater(3e5, switchedOn=True), outsideEnv, 0.05)
+    nonHeatedFactory = Factory(283.0, Cuboid(50,100,20), ThermalConductivity.CONCRETE, Heater(3e5), outsideEnv, 0.05)
+    heatedTemps = heatedFactory.simulateTemperature(time_points)
+    nonHeatedTemps = nonHeatedFactory.simulateTemperature(time_points)
 
-    temps = factory.simulateTemperature(time_points)
-
-    plt.plot(time_points[0:-1], temps)
+    outsideTemps = [outsideEnv.getCurrentOutsideTemperature(t) for t in time_points[0:-1]]
+    plt.plot(time_points[0:-1], heatedTemps, label='Indoor Temperature w heating')
+    plt.plot(time_points[0:-1], nonHeatedTemps, label="Indoor Temperature w/o heating")
+    plt.plot(time_points[0:-1], outsideTemps, label='Outdoor Temperature')
+    plt.legend()
+    plt.show()
    
 
 

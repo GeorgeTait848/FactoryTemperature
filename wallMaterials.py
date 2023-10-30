@@ -4,6 +4,9 @@ from enum import Enum
 class ThermalConductivity(Enum): 
     CONCRETE = 0.8
     STEEL = 50.2
+    CARBONSTEEL005 = 54.0
+    CARBONSTEEL01 = 43
+    CARBONSTEEL015 = 36
 
 
 class Cuboid(): 
@@ -21,4 +24,4 @@ class Cuboid():
         return self.l * self.w * self.h
 
     def getSurfaceAreaToVolumeRatio(self) -> float:
-        return self.getSurfaceArea()/self.getVolume
+        return self.getSurfaceArea()/self.getVolume()
