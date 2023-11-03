@@ -6,8 +6,8 @@ from heater import Heater
 from wallMaterials import ThermalConductivity, Cuboid
 from outsideTemp import OutsideEnvironment
 from trapezoidal import trapezoidal 
-
-
+from typing import Optional
+import copy
 AIR_SPECIFIC_HEAT_CAPACITY = 1.2 # kJ m^-3 K^-1
 
 
@@ -43,13 +43,32 @@ class Factory:
         dT = trapezoidal(f=self.getTemperatureTimeDerivative, x=currentTime, dx=dt)
         self.ind_temp += dT
 
-    def simulateTemperature(self, timeSamples: list[float])-> list[float]: 
+    def determineIfToggleHeater(self, toggleHeaterAt: Optional[list[float]], 
+                currentTime: float, currentToggleIndex: int) -> bool: 
+        if toggleHeaterAt is None: 
+            return False
+        
+        if currentToggleIndex == len(toggleHeaterAt): 
+            return False
+
+        return currentTime >= toggleHeaterAt[currentToggleIndex]
+
+    def simulateTemperature(self, timeSamples: list[float], toggleHeaterAt: Optional[list[float]])-> list[float]: 
+
         temperatures = []
+        currentlyHeated = self.heated
+        currentToggleIndex = 0
 
         for i in range(len(timeSamples)-1): 
             currentTime = timeSamples[i]
             dt = timeSamples[i+1]-timeSamples[i]
             temperatures.append(self.ind_temp)
+
+            if self.determineIfToggleHeater(toggleHeaterAt,currentTime, currentToggleIndex): 
+                self.heated = False if currentlyHeated else True
+                currentlyHeated = self.heated
+                currentToggleIndex +=1
+
             self.updateTemperature(currentTime, dt)
         
         
@@ -70,6 +89,8 @@ class NDFactory:
         self.T_1 = env_temp_half_width
         self.heated = heated
 
+
+
     def getNDTempTimeDerivative(self, currentTime: float) -> float: 
 
         mu = self.mu if self.heated else 0
@@ -79,14 +100,34 @@ class NDFactory:
         dT = trapezoidal(self.getNDTempTimeDerivative, currentTime, dt)
         self.T += dT
 
+    def determineIfToggleHeater(self, toggleHeaterAt: Optional[list[float]], 
+                currentTime: float, currentToggleIndex: int) -> bool: 
+        if toggleHeaterAt is None: 
+            return False
+        
+        if currentToggleIndex == len(toggleHeaterAt): 
+            return False
 
-    def simulateNDTemp(self, timeSamples: list[float], returnOutdoorTemps: bool = False) -> list[float]:
+        return currentTime >= toggleHeaterAt[currentToggleIndex]
+
+    def simulateNDTemp(self, timeSamples: list[float], 
+                    returnOutdoorTemps: bool = False, 
+                    toggleHeaterAt: Optional[list[float]] = None) -> list[float]:
+
+        currentlyHeated = self.heated
+        currentToggleIndex = 0
         temperatures = []
 
         for i in range(len(timeSamples)-1): 
             currentTime = timeSamples[i]
             dt = timeSamples[i+1]-timeSamples[i]
             temperatures.append(self.T)
+
+            if self.determineIfToggleHeater(toggleHeaterAt,currentTime, currentToggleIndex): 
+                self.heated = False if currentlyHeated else True
+                currentlyHeated = self.heated
+                currentToggleIndex +=1
+
             self.updateNDTemp(currentTime, dt)
 
         if returnOutdoorTemps: 
@@ -95,28 +136,59 @@ class NDFactory:
         
         return temperatures
 
-def main():
-    print("Hello World \n")
+
+
+def simulateTestFactory(): 
+    start = 0
+    end = 24
+    step = 0.01
+    time_points = np.arange(start=start, stop=end + step, step=step)
+    toggleHeaterAt = np.arange(start=start, stop=end, step=6)
+    outsideEnv = OutsideEnvironment(281,4)
+    
+    heatedFactory = Factory(283.0, Cuboid(50,100,20), ThermalConductivity.CONCRETE, Heater(3e5, switchedOn=True), outsideEnv, 0.05)
+    nonHeatedFactory = Factory(283.0, Cuboid(50,100,20), ThermalConductivity.CONCRETE, Heater(3e5), outsideEnv, 0.05)
+    toggledHeatingFactory = Factory(283.0, Cuboid(50,100,20), ThermalConductivity.CONCRETE, Heater(3e5, switchedOn=True), outsideEnv, 0.05)
+    heatedTemps, outsideTemps = heatedFactory.simulateNDTemp(time_points)
+    nonHeatedTemps = nonHeatedFactory.simulateNDTemp(time_points)
+    toggledHeatingTemps = toggledHeatingFactory.simulateNDTemp(time_points, toggleHeaterAt=toggleHeaterAt)
+    outsideTemps = [outsideEnv.getCurrentOutsideTemperature(t) for t in time_points[0:-1]]
+
+    plt.plot(time_points[0:-1], heatedTemps, label='Indoor Temperature w heating')
+    plt.plot(time_points[0:-1], nonHeatedTemps, label="Indoor Temperature w/o heating")
+    plt.plot(time_points[0:-1], outsideTemps, label='Outdoor Temperature')
+    plt.plot(time_points[0:-1], toggledHeatingTemps, label="Toggled Heating Temps")
+    plt.legend()
+    plt.show()
+
+
+
+def simulateTest_NDfactory():
+
     start = 0
     end = 1
     step = 0.001
     time_points = np.arange(start=start, stop=end + step, step=step)
-    # outsideEnv = OutsideEnvironment(281,4)
-    
-    # heatedFactory = Factory(283.0, Cuboid(50,100,20), ThermalConductivity.CONCRETE, Heater(3e5, switchedOn=True), outsideEnv, 0.05)
-    # nonHeatedFactory = Factory(283.0, Cuboid(50,100,20), ThermalConductivity.CONCRETE, Heater(3e5), outsideEnv, 0.05)
+    toggleHeaterAt = np.arange(start=start, stop=end, step=0.4)
 
     heatedFactory = NDFactory(ndTemp=1, mu=1, epsilon=10, env_mean_temp=1, env_temp_half_width=0.05, heated=True)
+    toggledHeatingFactory = NDFactory(ndTemp=1, mu=1, epsilon=10, env_mean_temp=1, env_temp_half_width=0.05, heated=True)
     nonHeatedFactory = NDFactory(1, 1, 10, 1, 0.05, False)
     heatedTemps, outsideTemps = heatedFactory.simulateNDTemp(time_points, returnOutdoorTemps=True)
     nonHeatedTemps = nonHeatedFactory.simulateNDTemp(time_points)
+    toggledHeatingTemps = toggledHeatingFactory.simulateNDTemp(time_points, returnOutdoorTemps=False, toggleHeaterAt=toggleHeaterAt)
 
-    # outsideTemps = [outsideEnv.getCurrentOutsideTemperature(t) for t in time_points[0:-1]]
     plt.plot(time_points[0:-1], heatedTemps, label='Indoor Temperature w heating')
     plt.plot(time_points[0:-1], nonHeatedTemps, label="Indoor Temperature w/o heating")
     plt.plot(time_points[0:-1], outsideTemps, label='Outdoor Temperature')
+    plt.plot(time_points[0:-1], toggledHeatingTemps, label="Toggled Heating Temps")
     plt.legend()
     plt.show()
+
+def main():
+    print("Hello World \n")
+    # simulateTestFactory()
+    simulateTest_NDfactory()
    
 
 
