@@ -80,7 +80,7 @@ class NDFactory:
         self.T += dT
 
 
-    def simulateNDTemp(self, timeSamples: list[float]) -> list[float]:
+    def simulateNDTemp(self, timeSamples: list[float], returnOutdoorTemps: bool = False) -> list[float]:
         temperatures = []
 
         for i in range(len(timeSamples)-1): 
@@ -89,6 +89,10 @@ class NDFactory:
             temperatures.append(self.T)
             self.updateNDTemp(currentTime, dt)
 
+        if returnOutdoorTemps: 
+            outdoortemps = 1 + self.T_1*np.sin(2*math.pi*timeSamples[0:-1])/self.T_0
+            return temperatures, outdoortemps
+        
         return temperatures
 
 def main():
@@ -102,15 +106,15 @@ def main():
     # heatedFactory = Factory(283.0, Cuboid(50,100,20), ThermalConductivity.CONCRETE, Heater(3e5, switchedOn=True), outsideEnv, 0.05)
     # nonHeatedFactory = Factory(283.0, Cuboid(50,100,20), ThermalConductivity.CONCRETE, Heater(3e5), outsideEnv, 0.05)
 
-    heatedFactory = NDFactory(ndTemp=1, mu=1, epsilon=100, env_mean_temp=1, env_temp_half_width=0.05, heated=True)
-    nonHeatedFactory = NDFactory(1, 1, 100, 1, 0.05, False)
-    heatedTemps = heatedFactory.simulateNDTemp(time_points)
+    heatedFactory = NDFactory(ndTemp=1, mu=1, epsilon=10, env_mean_temp=1, env_temp_half_width=0.05, heated=True)
+    nonHeatedFactory = NDFactory(1, 1, 10, 1, 0.05, False)
+    heatedTemps, outsideTemps = heatedFactory.simulateNDTemp(time_points, returnOutdoorTemps=True)
     nonHeatedTemps = nonHeatedFactory.simulateNDTemp(time_points)
 
     # outsideTemps = [outsideEnv.getCurrentOutsideTemperature(t) for t in time_points[0:-1]]
     plt.plot(time_points[0:-1], heatedTemps, label='Indoor Temperature w heating')
     plt.plot(time_points[0:-1], nonHeatedTemps, label="Indoor Temperature w/o heating")
-    # plt.plot(time_points[0:-1], outsideTemps, label='Outdoor Temperature')
+    plt.plot(time_points[0:-1], outsideTemps, label='Outdoor Temperature')
     plt.legend()
     plt.show()
    
