@@ -231,7 +231,7 @@ class FactorySimulation:
 
         return timeSamples[indexOfSteadyState]
 
-    def plotTempsMultipleMu(self, ids: list[int], until: float, muVals: list[float]):
+    def plotTempsMultipleNu(self, ids: list[int], until: float, nuVals: list[float]):
 
         xLabel = "t"
         yLabel = "T"
@@ -243,35 +243,36 @@ class FactorySimulation:
         colours = {0: "black", 1: "green", 2: "red"}
 
         title = "Dimensionless Factory Temperature Simulation for \u03bc={}".format(self.heatedFactory.mu) 
-        fig, axs = plt.subplots(2,2)
-        plt.suptitle(title)
+        fig, axs = plt.subplots(1,2)
+        plt.suptitle(title, fontsize=30)
         
 
         timeSamples = self.timeSamples(until)
     
         for i in range(2): 
-            for j in range(2): 
 
-                sim = FactorySimulation(self.heatedFactory.T, self.heatedFactory.mu, muVals[i*2 + j], self.heatedFactory.T_0, self.heatedFactory.T_1)
-                axs[i,j].plot(timeSamples[0:-1], sim.getEnvironmentTemps(until), color="blue", label="Env")
-                axs[i,j].set_xlabel(xLabel, fontdict={"size": 12})
-                axs[i,j].set_ylabel(yLabel, fontdict={"size": 12})
-                axs[i,j].set_title("\u03bd = {}".format(muVals[i*2 + j]))
-                axs[i,j].grid(visible=True)
+                sim = FactorySimulation(self.heatedFactory.T, self.heatedFactory.mu, nuVals[i], self.heatedFactory.T_0, self.heatedFactory.T_1)
+                axs[i].plot(timeSamples[0:-1], sim.getEnvironmentTemps(until), color="blue", label="Env")
+                axs[i].set_xlabel(xLabel, fontdict={"size": 30})
+                axs[i].set_ylabel(yLabel, fontdict={"size": 30})
+                axs[i].set_title("\u03bd = {}".format(nuVals[i]), fontdict={"size": 30})
+                axs[i].grid(visible=True)
+                axs[i].tick_params(axis='x', labelsize=20)
+                axs[i].tick_params(axis='y', labelsize=20)
                 for id in ids: 
                     currLabel = labels[id]
                     data = sim.getTemperatureSimulationData(id, until)
                     currColour = colours[id]
-                    axs[i,j].plot(timeSamples[0:-1], data, color=currColour, label=currLabel)
-                axs[i,j].legend()
+                    axs[i].plot(timeSamples[0:-1], data, color=currColour, label=currLabel)
+                axs[i].legend(fontsize=20)
         
         
         plt.show()
 
 
     def plotTemps(self, ids: list[int], until: float):
-        xLabel = "t  []"
-        yLabel = "T  []"
+        xLabel = "t"
+        yLabel = "T"
 
         labels = {0: "Heated", 
         1: "Toggled Heating", 
@@ -280,13 +281,15 @@ class FactorySimulation:
         colours = {0: "black", 1: "green", 2: "red"}
 
         title = "Dimensionless Factory Temperature Simulation for \u03bc={}, \u03bd = {}".format(self.heatedFactory.mu, self.heatedFactory.epsilon) 
-        plt.title(title)
+        plt.title(title, fontdict={"size": 30})
         
         timeSamples = self.timeSamples(until)
 
         plt.plot(timeSamples[0:-1], self.getEnvironmentTemps(until), color="blue", label="Env")
-        plt.xlabel(xLabel, fontdict={"size": 12})
-        plt.ylabel(yLabel, fontdict={"size": 12})
+        plt.xlabel(xLabel, fontdict={"size": 20})
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.ylabel(yLabel, fontdict={"size": 20})
 
         for id in ids: 
             currLabel = labels[id]
@@ -294,7 +297,7 @@ class FactorySimulation:
             currColour = colours[id]
             plt.plot(timeSamples[0:-1], data, color=currColour, label=currLabel)
 
-        plt.legend()
+        plt.legend(fontsize=20)
         plt.grid(visible=True)
         plt.show()
         
@@ -302,9 +305,9 @@ class FactorySimulation:
     def plotSteadyStateTimes(self, mu: list[float], nu: list[float]): 
 
         initialTempDiff = round(self.heatedFactory.T -self.heatedFactory.T_0, 2)
-        plt.title("Steady state dimensionless time vs \u03bc for (T_i-T_0) = {}".format(initialTempDiff))
-        plt.ylabel("Steady state time", fontdict={"size": 15})
-        plt.xlabel("\u03bc", fontdict={"size": 15})
+        plt.title("Steady state dimensionless time vs \u03bc for (T_i-T_0) = {}".format(initialTempDiff), fontdict={"size": 30})
+        plt.ylabel("Steady state time", fontdict={"size": 25})
+        plt.xlabel("\u03bc", fontdict={"size": 25})
 
 
         l = len(mu)
@@ -323,6 +326,9 @@ class FactorySimulation:
             print("Plot added for \u03bd = {}".format(nRounded))
         plt.grid(True)
         plt.legend()
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.legend(fontsize=25)
         plt.show()
 
     def getDataAfterSteadyStateTime(self, id: int, until: float): 
@@ -398,9 +404,11 @@ class FactorySimulation:
 
         lnNu = np.log(nuVals)
         lnPhaseDiffs = [np.log(sim.getSteadyStatePhaseAndTempDiffs(id, until)[0]) for sim in sims]
-        plt.title("Steady State Phase Difference vs ln(\u03bd)", fontdict={"size": 15})
+        plt.title("Steady State Phase Difference vs ln(\u03bd)", fontdict={"size": 30})
         plt.xlabel("ln(\u03bd)", fontdict={"size": 30})
+        plt.xticks(fontsize=30)
         plt.ylabel("ln(\u03c6)", fontdict={"size": 30})
+        plt.yticks(fontsize=30)
         plt.plot(lnNu, lnPhaseDiffs, color="black")
         plt.grid(visible=True)
         plt.show()
@@ -410,9 +418,11 @@ class FactorySimulation:
 
         muOverNu = [self.heatedFactory.mu/nu for nu in nuVals]
         tempDiffs = [sim.getSteadyStatePhaseAndTempDiffs(id, until)[1] for sim in sims]
-        plt.title("Steady State Peak Temperature Difference vs \u03bc/\u03bd", fontdict={"size": 15})
+        plt.title("Steady State Peak Temperature Difference vs \u03bc/\u03bd", fontdict={"size": 30})
         plt.xlabel("\u03bc/\u03bd", fontdict={"size": 30})
-        plt.ylabel("Peak Temperature Difference", fontdict={"size": 15})
+        plt.xticks(fontsize=30)
+        plt.ylabel("Peak Temperature Difference", fontdict={"size": 30})
+        plt.yticks(fontsize=30)
         plt.plot(muOverNu, tempDiffs, color="black")
         plt.grid(visible=True)
         plt.show()
@@ -422,22 +432,25 @@ class FactorySimulation:
 def main():
     print("Hello World \n")
 
-    timeOfSim = 60
+    timeOfSim = 12
     toggleHeaterAt = np.arange(start=0, stop=timeOfSim, step=4.0)
     sim = FactorySimulation(initialTemp=1.5, mu=1, epsilon=1, env_mean_temp=1, env_temp_half_width=0.1, toggleHeaterAt=toggleHeaterAt)
 
     
-    # sim.plotTempsMultipleMu([0, 2], timeOfSim, [0.5, 1, 2, 4])
-    # sim.plotTemps([0,2], timeOfSim)
-    # mu = [0.2*(i+1) for i in range(30)]
+    # sim.plotTempsMultipleNu([0, 2], timeOfSim, [2,4])
+    sim.plotTemps([0,1,2], timeOfSim)
+    
     nuForPhase = [0.1*(i+1) for i in range(19)] + [2.5 + 2*i for i in range(40)]
     nuForTemp = [0.1*(i+1) for i in range(100)]
     # sim.plotSteadyStatePhaseDiffs(0, timeOfSim, nuForPhase)
-    sim.plotSteadyStateTempDiffs(0, timeOfSim, nuForTemp)
+    # sim.plotSteadyStateTempDiffs(0, timeOfSim, nuForTemp)
     
 
     # sim = FactorySimulation(5.0, 0, 0, 1.0, 0.1)
-    # sim.plotSteadyStateTimes(mu, nu)
+    # mu = [0.2*(i+1) for i in range(30)]
+    # nuIns = [0.1, 0.2, 0.6, 1.0]
+    # nuCond = [(i + 2) for i in range(8)]
+    # sim.plotSteadyStateTimes(mu, nuIns)
 
 
    
